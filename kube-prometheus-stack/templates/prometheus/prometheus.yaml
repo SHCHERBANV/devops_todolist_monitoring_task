@@ -442,3 +442,9 @@ spec:
 {{ toYaml .Values.prometheus.prometheusSpec.tracingConfig | indent 4 }}
 {{- end }}
 {{- end }}
+scrape_configs:
+  - job_name: 'todoapp'
+    static_configs:
+      - targets: ['127.0.0.1:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 30s

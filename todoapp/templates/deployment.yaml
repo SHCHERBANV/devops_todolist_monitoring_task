@@ -3,80 +3,38 @@ kind: Deployment
 metadata:
   name: {{ include "todoapp.fullname" . }}
   labels:
-    {{- include "todoapp.labels" . | nindent 4 }}
+    app.kubernetes.io/name: {{ include "todoapp.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
-  {{- end }}
   selector:
     matchLabels:
-      {{- include "todoapp.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/name: {{ include "todoapp.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
-      annotations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
       labels:
-        {{- include "todoapp.labels" . | nindent 8 }}
-        {{- with .Values.podLabels }}
-        {{- toYaml . | nindent 8 }}
-        {{- end }}
+        app.kubernetes.io/name: {{ include "todoapp.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "http-metrics"  # This matches the metrics port in your service
+        prometheus.io/path: "/metrics"  # Ensure this matches your metrics endpoint
     spec:
-      {{- with .Values.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      serviceAccountName: {{ include "todoapp.serviceAccountName" . }}
-      securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ .Chart.Name }}
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          ports:
-            - name: http
-              containerPort: {{ .Values.service.port }}
-              protocol: TCP
-          livenessProbe:
-            {{- toYaml .Values.livenessProbe | nindent 12 }}
-          readinessProbe:
-            {{- toYaml .Values.readinessProbe | nindent 12 }}
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
-          
-          # Adding environment variables for the database
-          env:
-            - name: DB_HOST
-              value: {{ .Values.env.DB_HOST | quote }}
-            - name: DB_USER
-              value: {{ .Values.env.DB_USER | quote }}
-            - name: DB_PASSWORD
-              value: {{ .Values.env.DB_PASSWORD | quote }}
-            - name: DB_NAME
-              value: {{ .Values.env.DB_NAME | quote }}
-
-
-
-          {{- with .Values.volumeMounts }}
-          volumeMounts:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-      {{- with .Values.volumes }}
-      volumes:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        ports:
+        - containerPort: 8080  # This should match the target port for your app
+        env:
+          - name: DB_HOST
+            value: {{ .Values.env.DB_HOST }}
+          - name: DB_USER
+            value: {{ .Values.env.DB_USER }}
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.env.DB_PASSWORD.secretKeyRef.name }}
+                key: {{ .Values.env.DB_PASSWORD.secretKeyRef.key }}
+          - name: DB_NAME
+            value: {{ .Values.env.DB_NAME }}

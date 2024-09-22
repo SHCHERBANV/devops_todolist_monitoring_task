@@ -57,16 +57,20 @@ WSGI_APPLICATION = "todolist.wsgi.application"
 
 # Database configuration
 # Using environment variables to set up database credentials
+import os
+
 DATABASES = {
     'default': {
-        'ENGINE': 'mysql.connector.django',
-        'NAME': os.environ.get('DB_NAME', 'todoapp'),      # Name of your database
-        'USER': os.environ.get('DB_USER', 'vr89'),         # Database user
-        'PASSWORD': os.environ.get('DB_PASSWORD', '8262'), # Database password
-        'HOST': os.environ.get('DB_HOST', 'todoapp'),      # MySQL service name in Kubernetes
-        'PORT': os.environ.get('DB_PORT', '3306'),         # MySQL port
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.getenv('DB_NAME', 'todoapp'),
+        'USER': os.getenv('DB_USER', 'vr89'),
+        'PASSWORD': os.getenv('DB_PASSWORD', '8262'),
+        'HOST': os.getenv('DB_HOST', 'todolist-mysql.default.svc.cluster.local'),
+        'PORT': '3306',
     }
 }
+
+
 
 # Internationalization
 LANGUAGE_CODE = "en-us"
